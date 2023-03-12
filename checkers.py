@@ -97,6 +97,14 @@ def changeTurn(turn):
         turn = 'red'
     return turn
 
+def setLastMoveTake(takePiece):
+    global lastMove
+    if takePiece != None:
+        if takePiece == 'red':
+            lastMove = 'bluetake'
+        else:
+            lastMove = 'redtake'
+
 def validateMove(board, selected, square):
     global lastMove
     if selected.piece == 'red':
@@ -105,12 +113,12 @@ def validateMove(board, selected, square):
             lastMove = None
             return True
         #takes right
-        elif square.row == selected.row - 2 and square.col == selected.col + 2 and board.board[selected.row - 1][selected.col + 1].piece == 'blue':
+        elif square.row == selected.row - 2 and square.col == selected.col + 2 and 'blue' in board.board[selected.row - 1][selected.col + 1].piece:
             board.board[selected.row - 1][selected.col + 1].piece = None
             lastMove = 'redtake'
             return 'take'
         #takes left
-        elif square.row == selected.row - 2 and square.col == selected.col - 2 and board.board[selected.row - 1][selected.col - 1].piece == 'blue':
+        elif square.row == selected.row - 2 and square.col == selected.col - 2 and 'blue' in board.board[selected.row - 1][selected.col - 1].piece:
             board.board[selected.row - 1][selected.col - 1].piece = None
             lastMove = 'redtake'
             return 'take'
@@ -120,18 +128,46 @@ def validateMove(board, selected, square):
             lastMove = None
             return True
         #takes right
-        elif square.row == selected.row + 2 and square.col == selected.col + 2 and board.board[selected.row + 1][selected.col + 1].piece == 'red':
+        elif square.row == selected.row + 2 and square.col == selected.col + 2 and 'red' in board.board[selected.row + 1][selected.col + 1].piece:
             board.board[selected.row + 1][selected.col + 1].piece = None
             lastMove = 'bluetake'
             return 'take'
         #takes left
-        elif square.row == selected.row + 2 and square.col == selected.col - 2 and board.board[selected.row + 1][selected.col - 1].piece == 'red':
+        elif square.row == selected.row + 2 and square.col == selected.col - 2 and 'red' in board.board[selected.row + 1][selected.col - 1].piece:
             board.board[selected.row + 1][selected.col - 1].piece = None
             lastMove = 'bluetake'
             return 'take'
 
-    elif selected.piece in ['redKing', 'blueKing']:
-        pass
+    elif selected.piece in ['redking', 'blueking']:
+        #regular move
+        if (square.row == selected.row + 1 or square.row == selected.row - 1) and (square.col == selected.col + 1 or square.col == selected.col - 1) and square.piece == None:
+            lastMove = None
+            return True
+        #takes
+        if selected.piece == 'redking':
+            takePiece = 'blue'
+        elif selected.piece == 'blueking':
+            takePiece = 'red'
+        #takes downleft
+        if square.row == selected.row + 2 and square.col == selected.col - 2 and takePiece in board.board[selected.row + 1][selected.col - 1].piece:
+            board.board[selected.row + 1][selected.col - 1].piece = None
+            setLastMoveTake(takePiece)
+            return 'take'
+        #takes downright
+        if square.row == selected.row + 2 and square.col == selected.col + 2 and takePiece in board.board[selected.row + 1][selected.col + 1].piece:
+            board.board[selected.row + 1][selected.col + 1].piece = None
+            setLastMoveTake(takePiece)
+            return 'take'
+        #takes upleft
+        if square.row == selected.row - 2 and square.col == selected.col - 2 and takePiece in board.board[selected.row - 1][selected.col - 1].piece:
+            board.board[selected.row - 1][selected.col - 1].piece = None
+            setLastMoveTake(takePiece)
+            return 'take'
+        #takes upright
+        if square.row == selected.row - 2 and square.col == selected.col + 2 and takePiece in board.board[selected.row - 1][selected.col + 1].piece:
+            board.board[selected.row - 1][selected.col + 1].piece = None
+            setLastMoveTake(takePiece)
+            return 'take'
     return False
 
 def getClickedPos(pos, width):
@@ -151,6 +187,7 @@ def handleClick(board, selected, square, mid_take):
     global turn
     if square == selected:
         return selected
+    print(mid_take)
     if mid_take:
         if selected != None and square.piece == None:
             if validateMove(board, selected, square) == 'take':
@@ -209,12 +246,12 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
                     sys.exit()
-                if event.key == pygame.K_RETURN:
-                    if mid_take:
-                        selected.color = selected.tmpColor
-                        selected = None
-                        turn = changeTurn(turn)
-                        mid_take = False
+            if pygame.mouse.get_pressed()[2]:
+                if mid_take:
+                    selected.color = selected.tmpColor
+                    selected = None
+                    turn = changeTurn(turn)
+                    mid_take = False
 
             #left click screen
             elif pygame.mouse.get_pressed()[0]:
