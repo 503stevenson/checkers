@@ -1,7 +1,7 @@
 import sys
 import pygame
 
-WIDTH = 800
+WIDTH = 700
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("Checkers Game")
 
@@ -10,10 +10,11 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 TURQUOISE = (64, 224, 208)
 blue_img = pygame.image.load('figures/blue.png')
-blue_img = pygame.transform.scale(blue_img, (65, 65))
+blue_img = pygame.transform.scale(blue_img, (53, 53))
 red_img = pygame.image.load('figures/red.png')
-red_img = pygame.transform.scale(red_img, (65, 65))
+red_img = pygame.transform.scale(red_img, (53, 53))
 turn = 'red'
+lastMove = None
 
 class Square:
     def __init__(self, row, col, width):
@@ -30,6 +31,7 @@ class Board:
     def __init__(self, width):
         self.board = []
         self.squareWidth = width // 8
+        self.pieceCount = 0
 
         #add squares
         for i in range(8):
@@ -62,10 +64,12 @@ class Board:
             for square in range(8):
                 if self.board[row][square].color == BLACK:
                     self.board[row][square].piece = 'blue'
+                    self.pieceCount += 1
         for row in range(5, 8):
             for square in range(8):
                 if self.board[row][square].color == BLACK:
                     self.board[row][square].piece = 'red'
+                    self.pieceCount += 1
 
     def draw(self, win):
         win.fill(WHITE)
@@ -86,12 +90,37 @@ def changeTurn(turn):
     return turn
 
 def validateMove(board, selected, square):
+    global lastMove
     if selected.piece == 'red':
+        #regular move
         if square.row == selected.row - 1 and (square.col == selected.col + 1 or square.col == selected.col - 1):
+            lastMove = None
             return True
+        #takes right
+        elif square.row == selected.row - 2 and square.col == selected.col + 2 and board.board[selected.row - 1][selected.col + 1].piece == 'blue':
+            board.board[selected.row - 1][selected.col + 1].piece = None
+            lastMove = 'redtake'
+            return 'take'
+        #takes left
+        elif square.row == selected.row - 2 and square.col == selected.col - 2 and board.board[selected.row - 1][selected.col - 1].piece == 'blue':
+            board.board[selected.row - 1][selected.col - 1].piece = None
+            lastMove = 'redtake'
+            return 'take'
     elif selected.piece == 'blue':
+        #regular move
         if square.row == selected.row + 1 and (square.col == selected.col + 1 or square.col == selected.col - 1):
+            lastMove = None
             return True
+        #takes right
+        elif square.row == selected.row + 2 and square.col == selected.col + 2 and board.board[selected.row + 1][selected.col + 1].piece == 'red':
+            board.board[selected.row + 1][selected.col + 1].piece = None
+            lastMove = 'bluetake'
+            return 'take'
+        #takes left
+        elif square.row == selected.row + 2 and square.col == selected.col - 2 and board.board[selected.row + 1][selected.col - 1].piece == 'red':
+            board.board[selected.row + 1][selected.col - 1].piece = None
+            lastMove = 'bluetake'
+            return 'take'
 
     elif selected.piece in ['redKing', 'blueKing']:
         pass
@@ -104,35 +133,56 @@ def getClickedPos(pos, width):
     col = x // gap
     return row, col
 
-def handleClick(board, selected, square):
+def handleClick(board, selected, square, mid_take):
     global turn
-    #the user who's turn it is has selected one of their pieces
-    if square.piece != None and turn in square.piece:
-        #the user who's turn it is has changed their piece selection
-        if selected != None and turn in selected.piece:
-            selected.color = selected.tmpColor
-            square.color = TURQUOISE
-            selected = square
-        #the user is making an initial piece selection
-        elif selected == None:
-            square.color = TURQUOISE
-            selected = square
+    if square == selected:
         return selected
-    #the user has already selected their piece and is making a move
-    elif selected != None and square.piece == None:
-        if validateMove(board, selected, square):
-            square.piece = selected.piece
-            selected.piece = None
-            selected.color = selected.tmpColor
-            turn = changeTurn(turn)
-            return None
-    return selected
-
+    if mid_take:
+        if selected != None and square.piece == None:
+            if validateMove(board, selected, square) == 'take':
+                square.piece = selected.piece
+                selected.piece = None
+                selected.color = selected.tmpColor
+                square.color = TURQUOISE
+                return square
+        return selected
+    else:
+        #the user who's turn it is has selected one of their pieces
+        if square.piece != None and turn in square.piece:
+            #the user who's turn it is has changed their piece selection
+            if selected != None and selected.piece != None and turn in selected.piece:
+                selected.color = selected.tmpColor
+                square.color = TURQUOISE
+                selected = square
+            #the user is making an initial piece selection
+            elif selected == None:
+                square.color = TURQUOISE
+                selected = square
+            return selected
+        #the user has already selected their piece and is making a move
+        elif selected != None and square.piece == None:
+            response = validateMove(board, selected, square)
+            if response == True:
+                square.piece = selected.piece
+                selected.piece = None
+                selected.color = selected.tmpColor
+                turn = changeTurn(turn)
+                return None
+            elif response == 'take':
+                square.piece = selected.piece
+                selected.piece = None
+                selected.color = selected.tmpColor
+                square.color = TURQUOISE
+                return square
+        return selected
 
 def main():
     run = True
     board = Board(WIDTH)
     selected = None
+    mid_take = False
+    global turn
+    global lastMove
 
     while run:
         board.draw(WIN)
@@ -142,12 +192,20 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
                     sys.exit()
+                if event.key == pygame.K_RETURN:
+                    if mid_take:
+                        selected.color = selected.tmpColor
+                        selected = None
+                        turn = changeTurn(turn)
+                        mid_take = False
 
             #left click screen
-            if pygame.mouse.get_pressed()[0]:
+            elif pygame.mouse.get_pressed()[0]:
                 pos = pygame.mouse.get_pos()
                 row, col = getClickedPos(pos, WIDTH)
                 square = board.board[row][col]
-                selected = handleClick(board, selected, square)
+                selected = handleClick(board, selected, square, mid_take)
+                if selected == square and lastMove == turn + 'take':
+                    mid_take = True
 
 main()
