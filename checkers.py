@@ -11,8 +11,12 @@ WHITE = (255, 255, 255)
 TURQUOISE = (64, 224, 208)
 blue_img = pygame.image.load('figures/blue.png')
 blue_img = pygame.transform.scale(blue_img, (53, 53))
+blueking_img = pygame.image.load('figures/blueking.png')
+blueking_img = pygame.transform.scale(blueking_img, (53, 53))
 red_img = pygame.image.load('figures/red.png')
 red_img = pygame.transform.scale(red_img, (53, 53))
+redking_img = pygame.image.load('figures/redking.png')
+redking_img = pygame.transform.scale(redking_img, (53, 53))
 turn = 'red'
 lastMove = None
 
@@ -80,6 +84,10 @@ class Board:
                     WIN.blit(blue_img, (square.x + 16, square.y + 16))
                 if square.piece == 'red':
                     WIN.blit(red_img, (square.x + 16, square.y + 16))
+                if square.piece == 'redking':
+                    WIN.blit(redking_img, (square.x + 16, square.y + 16))
+                if square.piece == 'blueking':
+                    WIN.blit(blueking_img, (square.x + 16, square.y + 16))
         pygame.display.update()
 
 def changeTurn(turn):
@@ -133,6 +141,12 @@ def getClickedPos(pos, width):
     col = x // gap
     return row, col
 
+def checkForKing(square):
+    if square.row == 7 and square.piece == 'blue':
+        square.piece = 'blueking'
+    elif square.row == 0 and square.piece == 'red':
+        square.piece = 'redking'
+
 def handleClick(board, selected, square, mid_take):
     global turn
     if square == selected:
@@ -144,6 +158,7 @@ def handleClick(board, selected, square, mid_take):
                 selected.piece = None
                 selected.color = selected.tmpColor
                 square.color = TURQUOISE
+                checkForKing(square)
                 return square
         return selected
     else:
@@ -166,6 +181,7 @@ def handleClick(board, selected, square, mid_take):
                 square.piece = selected.piece
                 selected.piece = None
                 selected.color = selected.tmpColor
+                checkForKing(square)
                 turn = changeTurn(turn)
                 return None
             elif response == 'take':
@@ -173,6 +189,7 @@ def handleClick(board, selected, square, mid_take):
                 selected.piece = None
                 selected.color = selected.tmpColor
                 square.color = TURQUOISE
+                checkForKing(square)
                 return square
         return selected
 
