@@ -183,11 +183,30 @@ def checkForKing(square):
     elif square.row == 0 and square.piece == 'red':
         square.piece = 'redking'
 
+def checkWin(board):
+    blue = 0
+    red = 0
+    for row in board.board:
+        for square in row:
+            if square.piece != None and 'red' in square.piece:
+                red += 1
+            if square.piece != None and 'blue' in square.piece:
+                blue += 1
+    if blue == 0:
+        pygame.font.init()
+        my_font = pygame.font.SysFont('Comic Sans MS', 30)
+        redWin = my_font.render('Red Wins!', False, (0, 0, 0))
+        WIN.blit(redWin, (40,40))
+    if red == 0:
+        pygame.font.init()
+        my_font = pygame.font.SysFont('Comic Sans MS', 30)
+        blueWin = my_font.render('Blue Wins!', False, (0, 0, 0))
+        WIN.blit(blueWin, (40,40))
+
 def handleClick(board, selected, square, mid_take):
     global turn
     if square == selected:
         return selected
-    print(mid_take)
     if mid_take:
         if selected != None and square.piece == None:
             if validateMove(board, selected, square) == 'take':
@@ -196,6 +215,7 @@ def handleClick(board, selected, square, mid_take):
                 selected.color = selected.tmpColor
                 square.color = TURQUOISE
                 checkForKing(square)
+                checkWin(board)
                 return square
         return selected
     else:
@@ -227,6 +247,7 @@ def handleClick(board, selected, square, mid_take):
                 selected.color = selected.tmpColor
                 square.color = TURQUOISE
                 checkForKing(square)
+                checkWin(board)
                 return square
         return selected
 
